@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/product_provider.dart';
+import 'providers/favorites_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/catalog_screen.dart';
 
@@ -18,6 +19,7 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => ProductProvider()),
+        ChangeNotifierProvider(create: (_) => FavoritesProvider()),
       ],
       child: MaterialApp(
         title: 'MoeShop',
@@ -41,6 +43,21 @@ class AuthWrapper extends StatefulWidget {
 }
 
 class _AuthWrapperState extends State<AuthWrapper> {
+  @override
+  void initState() {
+    super.initState();
+    
+    // Настраиваем связь между провайдерами после первого рендера
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final productProvider = Provider.of<ProductProvider>(context, listen: false);
+      final favoritesProvider = Provider.of<FavoritesProvider>(context, listen: false);
+      
+      // Устанавливаем callback для синхронизации
+      favoritesProvider.setOnFavoritesChangedCallback(() {
+        productProvider.syncFavoriteStatus();
+      });
+    });
+  }
   @override
   Widget build(BuildContext context) {
     return Consumer<AuthProvider>(

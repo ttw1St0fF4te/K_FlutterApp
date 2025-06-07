@@ -109,3 +109,27 @@ class ToggleFavoriteResponse {
     );
   }
 }
+
+class FavoriteItem {
+  final int id;
+  final Product product;
+
+  FavoriteItem({
+    required this.id,
+    required this.product,
+  });
+
+  factory FavoriteItem.fromJson(Map<String, dynamic> json) {
+    return FavoriteItem(
+      id: json['id'] ?? 0,
+      product: Product.fromJson(json['product'] ?? {}),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'product': product.toJson(),
+    };
+  }
+}

@@ -6,7 +6,7 @@ import '../models/product.dart';
 
 class ApiService {
   // Use 10.0.2.2 for Android emulator, 127.0.0.1 for iOS simulator, localhost for web
-  static const String baseUrl = 'http://localhost:3000'; // Измените на ваш API URL
+  static const String baseUrl = 'http://127.0.0.1:3000'; // Измените на ваш API URL
   
   // Для хранения cookie сессии
   static String? sessionCookie;
@@ -294,7 +294,7 @@ class ApiService {
       print('Статус ответа избранного: ${response.statusCode}');
       print('Тело ответа избранного: ${response.body}');
 
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200 || response.statusCode == 201) {
         final responseData = jsonDecode(response.body);
         return ToggleFavoriteResponse.fromJson(responseData);
       } else {
@@ -303,6 +303,44 @@ class ApiService {
       }
     } catch (e) {
       print('Ошибка в toggleFavorite: $e');
+      return null;
+    }
+  }
+
+  static Future<List<FavoriteItem>?> getFavorites() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/favorites'),
+        headers: headers,
+      );
+
+      print('Статус ответа избранного: ${response.statusCode}');
+      print('Тело ответа избранного: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final List<dynamic> responseData = jsonDecode(response.body);
+        return responseData
+            .map((item) => FavoriteItem.fromJson(item as Map<String, dynamic>))
+            .toList();
+      } else {
+        print('Ошибка получения избранного: ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      print('Ошибка в getFavorites: $e');
+      return null;
+    }
+  }
+
+  static Future<Set<int>?> getFavoriteIds() async {
+    try {
+      final favorites = await getFavorites();
+      if (favorites != null) {
+        return favorites.map((item) => item.product.id).toSet();
+      }
+      return null;
+    } catch (e) {
+      print('Ошибка в getFavoriteIds: $e');
       return null;
     }
   }

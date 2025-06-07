@@ -5,6 +5,7 @@ import '../services/api_service.dart';
 class ProductProvider extends ChangeNotifier {
   List<Product> _products = [];
   bool _isLoading = false;
+  bool _isTogglingFavorite = false;
   String? _errorMessage;
   int _currentPage = 1;
   int _totalPages = 1;
@@ -80,6 +81,9 @@ class ProductProvider extends ChangeNotifier {
         _currentPage++;
         _hasMoreData = _currentPage <= _totalPages;
         
+        // Синхронизируем статус избранного после загрузки продуктов
+        await syncFavoriteStatus();
+        
         notifyListeners();
       } else {
         _setError('Ошибка загрузки каталога');
@@ -92,16 +96,25 @@ class ProductProvider extends ChangeNotifier {
   }
 
   Future<void> toggleFavorite(int productId) async {
+    if (_isTogglingFavorite) {
+      print('ProductProvider.toggleFavorite: операция уже выполняется, пропускаем вызов');
+      return;
+    }
+    
+    _isTogglingFavorite = true;
+    print('ProductProvider.toggleFavorite вызван для продукта $productId');
     try {
       final response = await ApiService.toggleFavorite(productId);
       
       if (response != null) {
+        print('ProductProvider: получен ответ - ${response.message}, isInFavorites: ${response.isInFavorites}');
         // Обновляем статус избранного для продукта в списке
         final productIndex = _products.indexWhere((p) => p.id == productId);
         if (productIndex != -1) {
           _products[productIndex] = _products[productIndex].copyWith(
             isInFavorites: response.isInFavorites,
           );
+          print('ProductProvider: обновлен статус продукта $productId на ${response.isInFavorites}');
           notifyListeners();
         }
       } else {
@@ -109,6 +122,8 @@ class ProductProvider extends ChangeNotifier {
       }
     } catch (e) {
       _setError('Ошибка подключения к серверу');
+    } finally {
+      _isTogglingFavorite = false;
     }
   }
 
@@ -125,5 +140,26 @@ class ProductProvider extends ChangeNotifier {
 
   void refresh() {
     loadProducts(refresh: true);
+  }
+
+  Future<void> syncFavoriteStatus() async {
+    try {
+      final favoriteIds = await ApiService.getFavoriteIds();
+      if (favoriteIds != null) {
+        print('ProductProvider: синхронизация избранного с ${favoriteIds.length} товарами');
+        for (int i = 0; i < _products.length; i++) {
+          final currentStatus = _products[i].isInFavorites;
+          final actualStatus = favoriteIds.contains(_products[i].id);
+          
+          if (currentStatus != actualStatus) {
+            print('ProductProvider: обновляю статус товара ${_products[i].id} с $currentStatus на $actualStatus');
+            _products[i] = _products[i].copyWith(isInFavorites: actualStatus);
+          }
+        }
+        notifyListeners();
+      }
+    } catch (e) {
+      print('ProductProvider: ошибка синхронизации избранного - $e');
+    }
   }
 }

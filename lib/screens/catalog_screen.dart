@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../providers/product_provider.dart';
 import '../providers/auth_provider.dart';
 import '../models/product.dart';
+import 'favorites_screen.dart';
 
 class CatalogScreen extends StatefulWidget {
   const CatalogScreen({super.key});
@@ -66,6 +67,19 @@ class _CatalogScreenState extends State<CatalogScreen> {
           style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w600),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.favorite_border, color: Colors.red),
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const FavoritesScreen()),
+              );
+              // Синхронизируем избранное после возвращения с экрана избранного
+              if (mounted) {
+                Provider.of<ProductProvider>(context, listen: false).syncFavoriteStatus();
+              }
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.red),
             onPressed: () {
@@ -202,7 +216,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
   }
 }
 
-class ProductCard extends StatelessWidget {
+class ProductCard extends StatefulWidget {
   final Product product;
   final VoidCallback onFavoriteToggle;
 
@@ -211,6 +225,33 @@ class ProductCard extends StatelessWidget {
     required this.product,
     required this.onFavoriteToggle,
   });
+
+  @override
+  State<ProductCard> createState() => _ProductCardState();
+}
+
+class _ProductCardState extends State<ProductCard> {
+  bool _isToggling = false;
+
+  Future<void> _handleFavoriteToggle() async {
+    if (_isToggling) return;
+    
+    setState(() {
+      _isToggling = true;
+    });
+    
+    try {
+      widget.onFavoriteToggle();
+      // Даем небольшую задержку для завершения операции
+      await Future.delayed(const Duration(milliseconds: 500));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isToggling = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -225,11 +266,10 @@ class ProductCard extends StatelessWidget {
           // Изображение товара
           Expanded(
             child: Stack(
-              children: [
-                ClipRRect(
+              children: [                  ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                   child: CachedNetworkImage(
-                    imageUrl: product.image,
+                    imageUrl: widget.product.image,
                     width: double.infinity,
                     fit: BoxFit.cover,
                     placeholder: (context, url) => Container(
@@ -240,7 +280,7 @@ class ProductCard extends StatelessWidget {
                       ),
                     ),
                     errorWidget: (context, url, error) {
-                      print('Ошибка загрузки изображения для ${product.name}: $error');
+                      print('Ошибка загрузки изображения для ${widget.product.name}: $error');
                       print('URL: $url');
                       return Container(
                         width: double.infinity,
@@ -274,7 +314,7 @@ class ProductCard extends StatelessWidget {
                   top: 8,
                   right: 8,
                   child: GestureDetector(
-                    onTap: onFavoriteToggle,
+                    onTap: _isToggling ? null : _handleFavoriteToggle,
                     child: Container(
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
@@ -282,8 +322,8 @@ class ProductCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Icon(
-                        product.isInFavorites ? Icons.favorite : Icons.favorite_border,
-                        color: product.isInFavorites ? Colors.red : Colors.grey[600],
+                        widget.product.isInFavorites ? Icons.favorite : Icons.favorite_border,
+                        color: widget.product.isInFavorites ? Colors.red : Colors.grey[600],
                         size: 20,
                       ),
                     ),
@@ -300,7 +340,7 @@ class ProductCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  product.name,
+                  widget.product.name,
                   style: const TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
@@ -310,7 +350,7 @@ class ProductCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  product.category,
+                  widget.product.category,
                   style: TextStyle(
                     color: Colors.grey[600],
                     fontSize: 12,
@@ -318,7 +358,7 @@ class ProductCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '${product.price.toStringAsFixed(0)} ₽',
+                  '${widget.product.price.toStringAsFixed(0)} ₽',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
