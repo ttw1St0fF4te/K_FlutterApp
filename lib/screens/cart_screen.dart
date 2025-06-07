@@ -6,6 +6,7 @@ import '../providers/auth_provider.dart';
 import '../models/product.dart';
 import 'product_detail_screen.dart';
 import 'catalog_screen.dart';
+import 'checkout_screen.dart';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
@@ -179,10 +180,10 @@ class _CartScreenState extends State<CartScreen> {
                       height: 50,
                       child: ElevatedButton(
                         onPressed: () {
-                          // TODO: Реализовать переход к оформлению заказа
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Функция оформления заказа будет реализована позже'),
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const CheckoutScreen(),
                             ),
                           );
                         },

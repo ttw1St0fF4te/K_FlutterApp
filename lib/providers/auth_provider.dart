@@ -9,6 +9,9 @@ class AuthProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
   bool _isInitialized = false;
+  
+  // Callback для очистки других провайдеров при смене пользователя
+  VoidCallback? _onUserChangeCallback;
 
   User? get user => _user;
   bool get isLoading => _isLoading;
@@ -18,6 +21,11 @@ class AuthProvider extends ChangeNotifier {
 
   AuthProvider() {
     _initializeAuth();
+  }
+
+  // Метод для регистрации callback очистки
+  void setUserChangeCallback(VoidCallback callback) {
+    _onUserChangeCallback = callback;
   }
 
   Future<void> _initializeAuth() async {
@@ -162,6 +170,12 @@ class AuthProvider extends ChangeNotifier {
     _user = null;
     await _clearUserData();
     // Cookie очищается в ApiService.logout()
+    
+    // Вызываем callback для очистки других провайдеров
+    if (_onUserChangeCallback != null) {
+      _onUserChangeCallback!();
+    }
+    
     notifyListeners();
   }
 

@@ -5,6 +5,7 @@ import 'providers/product_provider.dart';
 import 'providers/favorites_provider.dart';
 import 'providers/product_detail_provider.dart';
 import 'providers/cart_provider.dart';
+import 'providers/checkout_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/catalog_screen.dart';
 
@@ -24,6 +25,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => FavoritesProvider()),
         ChangeNotifierProvider(create: (_) => ProductDetailProvider()),
         ChangeNotifierProvider(create: (_) => CartProvider()),
+        ChangeNotifierProvider(create: (_) => CheckoutProvider()),
       ],
       child: MaterialApp(
         title: 'MoeShop',
@@ -53,10 +55,12 @@ class _AuthWrapperState extends State<AuthWrapper> {
     
     // Настраиваем связь между провайдерами после первого рендера
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final productProvider = Provider.of<ProductProvider>(context, listen: false);
       final favoritesProvider = Provider.of<FavoritesProvider>(context, listen: false);
       final productDetailProvider = Provider.of<ProductDetailProvider>(context, listen: false);
       final cartProvider = Provider.of<CartProvider>(context, listen: false);
+      final checkoutProvider = Provider.of<CheckoutProvider>(context, listen: false);
       
       // Устанавливаем callback для синхронизации избранного
       favoritesProvider.setOnFavoritesChangedCallback(() {
@@ -65,6 +69,11 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
       // Устанавливаем связь с CartProvider для ProductDetailProvider
       productDetailProvider.setCartProvider(cartProvider);
+      
+      // Устанавливаем callback для очистки CheckoutProvider при смене пользователя
+      authProvider.setUserChangeCallback(() {
+        checkoutProvider.clearForUserChange();
+      });
     });
   }
   @override

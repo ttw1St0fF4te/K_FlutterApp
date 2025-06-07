@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/auth_models.dart';
 import '../models/product.dart';
 import '../models/api_error.dart';
+import '../models/checkout.dart';
 
 class ApiService {
   // Use 10.0.2.2 for Android emulator, 127.0.0.1 for iOS simulator, localhost for web
@@ -681,6 +682,84 @@ class ApiService {
       }
       // Иначе создаем новое исключение
       throw ApiException('Ошибка подключения к серверу', 0);
+    }
+  }
+
+  // Получение информации для оформления заказа
+  static Future<CheckoutInfo?> getCheckoutInfo() async {
+    try {
+      print('Отправка запроса checkout: $baseUrl/orders/checkout');
+      print('Headers: $headers');
+      final response = await http.get(
+        Uri.parse('$baseUrl/orders/checkout'),
+        headers: headers,
+      );
+
+      print('Статус ответа checkout: ${response.statusCode}');
+      print('Тело ответа checkout: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        return CheckoutInfo.fromJson(responseData);
+      } else {
+        final errorData = jsonDecode(response.body);
+        throw ApiException(
+          errorData['message'] ?? 'Ошибка получения данных для оформления',
+          response.statusCode
+        );
+      }
+    } catch (e) {
+      print('Ошибка в getCheckoutInfo: $e');
+      if (e is ApiException) {
+        rethrow;
+      }
+      throw ApiException('Ошибка подключения к серверу', 0);
+    }
+  }
+
+  // Создание заказа
+  static Future<ApiResult<CreatedOrder>> createOrderNew(CreateOrderRequest request) async {
+    try {
+      print('Отправка запроса создания заказа: $baseUrl/orders');
+      print('Headers: $headers');
+      print('Body: ${jsonEncode(request.toJson())}');
+      
+      final response = await http.post(
+        Uri.parse('$baseUrl/orders'),
+        headers: headers,
+        body: jsonEncode(request.toJson()),
+      );
+
+      print('Статус ответа создания заказа: ${response.statusCode}');
+      print('Тело ответа создания заказа: ${response.body}');
+
+      final responseData = jsonDecode(response.body);
+
+      if (response.statusCode == 201) {
+        return ApiResult.success(CreatedOrder.fromJson(responseData));
+      } else {
+        // Для ошибок валидации и других HTTP ошибок
+        String errorMessage = 'Ошибка создания заказа';
+        
+        if (responseData['message'] is List) {
+          // Если сервер отправляет массив ошибок валидации
+          errorMessage = (responseData['message'] as List).join(', ');
+        } else if (responseData['message'] is String) {
+          errorMessage = responseData['message'];
+        }
+        
+        return ApiResult.failure(ApiError(
+          message: errorMessage,
+          statusCode: response.statusCode,
+        ));
+      }
+    } catch (e) {
+      print('Ошибка в createOrderNew: $e');
+      // Для любых других ошибок (сетевые, парсинг JSON и т.д.)
+      return ApiResult.failure(ApiError(
+        message: 'Ошибка подключения к серверу',
+        statusCode: 0,
+      ));
     }
   }
 }
