@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/auth_provider.dart';
+import 'providers/product_provider.dart';
 import 'screens/login_screen.dart';
-import 'screens/success_screen.dart';
+import 'screens/catalog_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -16,6 +17,7 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => ProductProvider()),
       ],
       child: MaterialApp(
         title: 'MoeShop',
@@ -40,20 +42,21 @@ class AuthWrapper extends StatefulWidget {
 
 class _AuthWrapperState extends State<AuthWrapper> {
   @override
-  void initState() {
-    super.initState();
-    // Загружаем сохраненные данные пользователя при запуске
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<AuthProvider>(context, listen: false).loadUserData();
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Consumer<AuthProvider>(
       builder: (context, authProvider, child) {
+        // Показываем загрузку пока AuthProvider инициализируется
+        if (!authProvider.isInitialized) {
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+        
+        // После инициализации показываем соответствующий экран
         if (authProvider.isAuthenticated) {
-          return const SuccessScreen();
+          return const CatalogScreen();
         } else {
           return const LoginScreen();
         }

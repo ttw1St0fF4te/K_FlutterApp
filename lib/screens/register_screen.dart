@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
-import 'success_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -32,18 +31,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (_formKey.currentState!.validate()) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       
-      final success = await authProvider.register(
+      await authProvider.register(
         _usernameController.text.trim(),
         _passwordController.text,
         _confirmPasswordController.text,
         _emailController.text.trim().isEmpty ? null : _emailController.text.trim(),
       );
 
-      if (success && mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const SuccessScreen()),
-        );
-      }
+      // Не нужно делать navigate - AuthWrapper автоматически перенаправит на CatalogScreen
+      // после изменения состояния в AuthProvider
     }
   }
 
