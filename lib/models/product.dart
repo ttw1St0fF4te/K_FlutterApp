@@ -341,3 +341,45 @@ class AddToCartResponse {
     );
   }
 }
+
+class CartUpdateResponse {
+  final bool success;
+  final int newQuantity;
+  final double itemTotal;
+
+  CartUpdateResponse({
+    required this.success,
+    required this.newQuantity,
+    required this.itemTotal,
+  });
+
+  factory CartUpdateResponse.fromJson(Map<String, dynamic> json) {
+    return CartUpdateResponse(
+      success: json['success'] ?? false,
+      newQuantity: json['newQuantity'] ?? 0,
+      itemTotal: _parseDouble(json['itemTotal']),
+    );
+  }
+
+  static double _parseDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? 0.0;
+    return 0.0;
+  }
+}
+
+class RemoveFromCartResponse {
+  final String message;
+
+  RemoveFromCartResponse({
+    required this.message,
+  });
+
+  factory RemoveFromCartResponse.fromJson(Map<String, dynamic> json) {
+    return RemoveFromCartResponse(
+      message: json['message'] ?? '',
+    );
+  }
+}

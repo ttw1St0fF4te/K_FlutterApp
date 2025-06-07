@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../models/product.dart';
+import '../models/api_error.dart';
 import '../services/api_service.dart';
 
 class ProductProvider extends ChangeNotifier {
@@ -121,7 +122,12 @@ class ProductProvider extends ChangeNotifier {
         _setError('Ошибка изменения избранного');
       }
     } catch (e) {
-      _setError('Ошибка подключения к серверу');
+      print('ProductProvider.toggleFavorite: исключение - $e');
+      if (e is ApiException) {
+        _setError(e.message);
+      } else {
+        _setError('Ошибка подключения к серверу');
+      }
     } finally {
       _isTogglingFavorite = false;
     }

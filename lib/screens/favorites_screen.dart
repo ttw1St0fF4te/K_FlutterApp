@@ -24,6 +24,15 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     });
   }
 
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -46,30 +55,16 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       ),
       body: Consumer<FavoritesProvider>(
         builder: (context, favoritesProvider, child) {
-          if (favoritesProvider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
+          // Показываем SnackBar при ошибке
+          if (favoritesProvider.errorMessage != null && !favoritesProvider.isLoading) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _showErrorSnackBar(favoritesProvider.errorMessage!);
+              favoritesProvider.clearError();
+            });
           }
 
-          if (favoritesProvider.errorMessage != null) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.error_outline, size: 64, color: Colors.grey[400]),
-                  const SizedBox(height: 16),
-                  Text(
-                    favoritesProvider.errorMessage!,
-                    style: TextStyle(color: Colors.grey[600]),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () => favoritesProvider.refresh(),
-                    child: const Text('Повторить'),
-                  ),
-                ],
-              ),
-            );
+          if (favoritesProvider.isLoading) {
+            return const Center(child: CircularProgressIndicator());
           }
 
           if (favoritesProvider.favorites.isEmpty) {

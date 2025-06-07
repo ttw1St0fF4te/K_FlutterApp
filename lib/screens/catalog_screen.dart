@@ -3,8 +3,10 @@ import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../providers/product_provider.dart';
 import '../providers/auth_provider.dart';
+import '../providers/cart_provider.dart';
 import '../models/product.dart';
 import 'favorites_screen.dart';
+import 'cart_screen.dart';
 import 'product_detail_screen.dart';
 
 class CatalogScreen extends StatefulWidget {
@@ -22,9 +24,10 @@ class _CatalogScreenState extends State<CatalogScreen> {
   void initState() {
     super.initState();
     
-    // Загружаем продукты при первом запуске
+    // Загружаем продукты и корзину при первом запуске
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<ProductProvider>(context, listen: false).loadProducts(refresh: true);
+      Provider.of<CartProvider>(context, listen: false).loadCart();
     });
 
     // Добавляем слушатель для пагинации
@@ -56,6 +59,15 @@ class _CatalogScreenState extends State<CatalogScreen> {
     );
   }
 
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -79,6 +91,53 @@ class _CatalogScreenState extends State<CatalogScreen> {
               if (mounted) {
                 Provider.of<ProductProvider>(context, listen: false).syncFavoriteStatus();
               }
+            },
+          ),
+          Consumer<CartProvider>(
+            builder: (context, cartProvider, child) {
+              return Stack(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.shopping_cart_outlined, color: Colors.blue),
+                    onPressed: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const CartScreen()),
+                      );
+                      // Синхронизируем состояние корзины после возвращения с экрана корзины
+                      if (mounted) {
+                        Provider.of<ProductProvider>(context, listen: false).syncFavoriteStatus();
+                        Provider.of<CartProvider>(context, listen: false).loadCart();
+                      }
+                    },
+                  ),
+                  if (cartProvider.totalItems > 0)
+                    Positioned(
+                      right: 6,
+                      top: 6,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: Text(
+                          '${cartProvider.totalItems}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              );
             },
           ),
           IconButton(
@@ -141,29 +200,16 @@ class _CatalogScreenState extends State<CatalogScreen> {
           Expanded(
             child: Consumer<ProductProvider>(
               builder: (context, productProvider, child) {
-                if (productProvider.isLoading && productProvider.products.isEmpty) {
-                  return const Center(child: CircularProgressIndicator());
+                // Показываем SnackBar при ошибке
+                if (productProvider.errorMessage != null && !productProvider.isLoading) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    _showErrorSnackBar(productProvider.errorMessage!);
+                    productProvider.clearError();
+                  });
                 }
 
-                if (productProvider.errorMessage != null && productProvider.products.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.error_outline, size: 64, color: Colors.grey[400]),
-                        const SizedBox(height: 16),
-                        Text(
-                          productProvider.errorMessage!,
-                          style: TextStyle(color: Colors.grey[600]),
-                        ),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: () => productProvider.refresh(),
-                          child: const Text('Повторить'),
-                        ),
-                      ],
-                    ),
-                  );
+                if (productProvider.isLoading && productProvider.products.isEmpty) {
+                  return const Center(child: CircularProgressIndicator());
                 }
 
                 if (productProvider.products.isEmpty) {

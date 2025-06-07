@@ -300,11 +300,29 @@ class ApiService {
         return ToggleFavoriteResponse.fromJson(responseData);
       } else {
         print('Ошибка переключения избранного: ${response.statusCode}');
-        return null;
+        // Парсим детальную ошибку от сервера
+        String errorMessage = 'Неизвестная ошибка';
+        
+        if (response.body.isNotEmpty) {
+          try {
+            final errorData = jsonDecode(response.body);
+            errorMessage = errorData['message'] ?? 'Неизвестная ошибка';
+          } catch (jsonError) {
+            // Если не удалось распарсить JSON, используем тело ответа как есть
+            errorMessage = response.body;
+          }
+        }
+        
+        throw ApiException(errorMessage, response.statusCode);
       }
     } catch (e) {
       print('Ошибка в toggleFavorite: $e');
-      return null;
+      // Если это уже ApiException, просто перебрасываем
+      if (e is ApiException) {
+        rethrow;
+      }
+      // Иначе создаем новое исключение
+      throw ApiException('Ошибка подключения к серверу', 0);
     }
   }
 
@@ -325,10 +343,30 @@ class ApiService {
             .toList();
       } else {
         print('Ошибка получения избранного: ${response.statusCode}');
+        // Для ошибок авторизации бросаем ApiException
+        if (response.statusCode == 401) {
+          String errorMessage = 'Требуется авторизация';
+          
+          if (response.body.isNotEmpty) {
+            try {
+              final errorData = jsonDecode(response.body);
+              errorMessage = errorData['message'] ?? 'Требуется авторизация';
+            } catch (jsonError) {
+              // Если не удалось распарсить JSON, используем дефолтное сообщение
+            }
+          }
+          
+          throw ApiException(errorMessage, response.statusCode);
+        }
         return null;
       }
     } catch (e) {
       print('Ошибка в getFavorites: $e');
+      // Если это уже ApiException, просто перебрасываем
+      if (e is ApiException) {
+        rethrow;
+      }
+      // Иначе возвращаем null для других ошибок
       return null;
     }
   }
@@ -385,11 +423,29 @@ class ApiService {
         return AddToCartResponse.fromJson(responseData);
       } else {
         print('Ошибка добавления в корзину: ${response.statusCode}');
-        return null;
+        // Парсим детальную ошибку от сервера
+        String errorMessage = 'Неизвестная ошибка';
+        
+        if (response.body.isNotEmpty) {
+          try {
+            final errorData = jsonDecode(response.body);
+            errorMessage = errorData['message'] ?? 'Неизвестная ошибка';
+          } catch (jsonError) {
+            // Если не удалось распарсить JSON, используем тело ответа как есть
+            errorMessage = response.body;
+          }
+        }
+        
+        throw ApiException(errorMessage, response.statusCode);
       }
     } catch (e) {
       print('Ошибка в addToCart: $e');
-      return null;
+      // Если это уже ApiException, просто перебрасываем
+      if (e is ApiException) {
+        rethrow;
+      }
+      // Иначе создаем новое исключение
+      throw ApiException('Ошибка подключения к серверу', 0);
     }
   }
 
@@ -464,10 +520,30 @@ class ApiService {
         return Cart.fromJson(responseData);
       } else {
         print('Ошибка получения корзины: ${response.statusCode}');
+        // Для ошибок авторизации бросаем ApiException
+        if (response.statusCode == 401) {
+          String errorMessage = 'Требуется авторизация';
+          
+          if (response.body.isNotEmpty) {
+            try {
+              final errorData = jsonDecode(response.body);
+              errorMessage = errorData['message'] ?? 'Требуется авторизация';
+            } catch (jsonError) {
+              // Если не удалось распарсить JSON, используем дефолтное сообщение
+            }
+          }
+          
+          throw ApiException(errorMessage, response.statusCode);
+        }
         return null;
       }
     } catch (e) {
       print('Ошибка в getCart: $e');
+      // Если это уже ApiException, просто перебрасываем
+      if (e is ApiException) {
+        rethrow;
+      }
+      // Иначе возвращаем null для других ошибок
       return null;
     }
   }
@@ -482,6 +558,129 @@ class ApiService {
     } catch (e) {
       print('Ошибка в getCartProductIds: $e');
       return null;
+    }
+  }
+
+  static Future<CartUpdateResponse> increaseCartItemQuantity(int cartItemId) async {
+    try {
+      final response = await http.patch(
+        Uri.parse('$baseUrl/cart-items/$cartItemId/increase'),
+        headers: headers,
+      );
+
+      print('Статус ответа увеличения количества: ${response.statusCode}');
+      print('Тело ответа увеличения количества: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        return CartUpdateResponse.fromJson(responseData);
+      } else {
+        print('Ошибка увеличения количества: ${response.statusCode}');
+        // Парсим детальную ошибку от сервера
+        String errorMessage = 'Неизвестная ошибка';
+        
+        if (response.body.isNotEmpty) {
+          try {
+            final errorData = jsonDecode(response.body);
+            errorMessage = errorData['message'] ?? 'Неизвестная ошибка';
+          } catch (jsonError) {
+            // Если не удалось распарсить JSON, используем тело ответа как есть
+            errorMessage = response.body;
+          }
+        }
+        
+        throw ApiException(errorMessage, response.statusCode);
+      }
+    } catch (e) {
+      print('Ошибка в increaseCartItemQuantity: $e');
+      // Если это уже ApiException, просто перебрасываем
+      if (e is ApiException) {
+        rethrow;
+      }
+      // Иначе создаем новое исключение
+      throw ApiException('Ошибка подключения к серверу', 0);
+    }
+  }
+
+  static Future<CartUpdateResponse> decreaseCartItemQuantity(int cartItemId) async {
+    try {
+      final response = await http.patch(
+        Uri.parse('$baseUrl/cart-items/$cartItemId/decrease'),
+        headers: headers,
+      );
+
+      print('Статус ответа уменьшения количества: ${response.statusCode}');
+      print('Тело ответа уменьшения количества: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        return CartUpdateResponse.fromJson(responseData);
+      } else {
+        print('Ошибка уменьшения количества: ${response.statusCode}');
+        // Парсим детальную ошибку от сервера
+        String errorMessage = 'Неизвестная ошибка';
+        
+        if (response.body.isNotEmpty) {
+          try {
+            final errorData = jsonDecode(response.body);
+            errorMessage = errorData['message'] ?? 'Неизвестная ошибка';
+          } catch (jsonError) {
+            // Если не удалось распарсить JSON, используем тело ответа как есть
+            errorMessage = response.body;
+          }
+        }
+        
+        throw ApiException(errorMessage, response.statusCode);
+      }
+    } catch (e) {
+      print('Ошибка в decreaseCartItemQuantity: $e');
+      // Если это уже ApiException, просто перебрасываем
+      if (e is ApiException) {
+        rethrow;
+      }
+      // Иначе создаем новое исключение
+      throw ApiException('Ошибка подключения к серверу', 0);
+    }
+  }
+
+  static Future<RemoveFromCartResponse> removeFromCart(int cartItemId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/cart-items/$cartItemId'),
+        headers: headers,
+      );
+
+      print('Статус ответа удаления из корзины: ${response.statusCode}');
+      print('Тело ответа удаления из корзины: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        return RemoveFromCartResponse.fromJson(responseData);
+      } else {
+        print('Ошибка удаления из корзины: ${response.statusCode}');
+        // Парсим детальную ошибку от сервера
+        String errorMessage = 'Неизвестная ошибка';
+        
+        if (response.body.isNotEmpty) {
+          try {
+            final errorData = jsonDecode(response.body);
+            errorMessage = errorData['message'] ?? 'Неизвестная ошибка';
+          } catch (jsonError) {
+            // Если не удалось распарсить JSON, используем тело ответа как есть
+            errorMessage = response.body;
+          }
+        }
+        
+        throw ApiException(errorMessage, response.statusCode);
+      }
+    } catch (e) {
+      print('Ошибка в removeFromCart: $e');
+      // Если это уже ApiException, просто перебрасываем
+      if (e is ApiException) {
+        rethrow;
+      }
+      // Иначе создаем новое исключение
+      throw ApiException('Ошибка подключения к серверу', 0);
     }
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/product.dart';
+import '../models/api_error.dart';
 import '../services/api_service.dart';
 
 class FavoritesProvider with ChangeNotifier {
@@ -51,11 +52,18 @@ class FavoritesProvider with ChangeNotifier {
         notifyListeners();
       } else {
         print('FavoritesProvider.loadFavorites: response равен null');
-        _setError('Ошибка загрузки избранного');
+        // Не показываем ошибку для null-ответа, так как это может быть пустой список избранного
       }
     } catch (e) {
       print('FavoritesProvider.loadFavorites: исключение - $e');
-      _setError('Ошибка подключения к серверу');
+      // Не показываем ошибки авторизации пользователю при загрузке избранного
+      if (e is ApiException && e.statusCode == 401) {
+        print('FavoritesProvider: пользователь не авторизован для загрузки избранного');
+        // Очищаем избранное для неавторизованного пользователя
+        _favorites = [];
+      } else {
+        _setError('Ошибка подключения к серверу');
+      }
     }
 
     _setLoading(false);
@@ -86,7 +94,11 @@ class FavoritesProvider with ChangeNotifier {
       }
     } catch (e) {
       print('FavoritesProvider.toggleFavorite: исключение - $e');
-      _setError('Ошибка подключения к серверу');
+      if (e is ApiException) {
+        _setError(e.message);
+      } else {
+        _setError('Ошибка подключения к серверу');
+      }
     }
   }
 

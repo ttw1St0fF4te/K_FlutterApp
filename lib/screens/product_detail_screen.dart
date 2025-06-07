@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/product_detail_provider.dart';
 import '../providers/auth_provider.dart';
 import '../models/product.dart';
+import 'cart_screen.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final int productId;
@@ -33,6 +34,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     provider.loadReviews(widget.productId);
   }
 
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _reviewController.dispose();
@@ -49,28 +59,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       ),
       body: Consumer<ProductDetailProvider>(
         builder: (context, provider, child) {
-          if (provider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
+          // Показываем SnackBar при ошибке (кроме ошибок загрузки)
+          if (provider.errorMessage != null && !provider.isLoading) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _showErrorSnackBar(provider.errorMessage!);
+              provider.clearError();
+            });
           }
 
-          if (provider.errorMessage != null) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    provider.errorMessage!,
-                    style: const TextStyle(color: Colors.red),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: _loadData,
-                    child: const Text('Повторить'),
-                  ),
-                ],
-              ),
-            );
+          if (provider.isLoading) {
+            return const Center(child: CircularProgressIndicator());
           }
 
           final product = provider.productDetails;
@@ -254,12 +252,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     onPressed: isAuthenticated && !provider.isAddingToCart
                         ? () async {
                             if (product.isInCart) {
-                              // TODO: Переход к корзине (реализуем позже)
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Переход к корзине будет реализован позже'),
+                              // Переход к корзине с ожиданием возврата
+                              await Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => const CartScreen(),
                                 ),
                               );
+                              // Синхронизируем состояние корзины после возврата
+                              if (mounted) {
+                                provider.syncCartStatus();
+                              }
                             } else {
                               final success = await provider.addToCart(product.id);
                               if (success) {

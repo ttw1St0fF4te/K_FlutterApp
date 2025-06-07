@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import '../models/product.dart';
+import '../models/api_error.dart';
 import '../services/api_service.dart';
+import 'cart_provider.dart';
 
 class ProductDetailProvider extends ChangeNotifier {
   ProductDetails? _productDetails;
@@ -12,6 +14,9 @@ class ProductDetailProvider extends ChangeNotifier {
   bool _isTogglingFavorite = false;
   String? _errorMessage;
   String? _reviewErrorMessage;
+
+  // Ссылка на CartProvider для синхронизации
+  CartProvider? _cartProvider;
 
   ProductDetails? get productDetails => _productDetails;
   List<Review> get reviews => _reviews;
@@ -66,6 +71,11 @@ class ProductDetailProvider extends ChangeNotifier {
   void clearReviewError() {
     _reviewErrorMessage = null;
     notifyListeners();
+  }
+
+  // Метод для установки ссылки на CartProvider
+  void setCartProvider(CartProvider cartProvider) {
+    _cartProvider = cartProvider;
   }
 
   Future<void> loadProductDetails(int productId) async {
@@ -156,6 +166,13 @@ class ProductDetailProvider extends ChangeNotifier {
     }
   }
 
+  // Публичный метод для синхронизации состояния корзины
+  Future<void> syncCartStatus() async {
+    if (_productDetails != null) {
+      await _syncCartStatus(_productDetails!.id);
+    }
+  }
+
   Future<void> loadReviews(int productId) async {
     _setLoadingReviews(true);
     _setError(null);
@@ -200,6 +217,12 @@ class ProductDetailProvider extends ChangeNotifier {
           );
           notifyListeners();
         }
+
+        // Обновляем CartProvider для синхронизации счетчика корзины
+        if (_cartProvider != null) {
+          await _cartProvider!.loadCart();
+        }
+
         _setAddingToCart(false);
         return true;
       } else {
@@ -208,7 +231,11 @@ class ProductDetailProvider extends ChangeNotifier {
         return false;
       }
     } catch (e) {
-      _setError('Ошибка подключения к серверу');
+      if (e is ApiException) {
+        _setError(e.message);
+      } else {
+        _setError('Ошибка подключения к серверу');
+      }
       _setAddingToCart(false);
       return false;
     }
@@ -247,7 +274,11 @@ class ProductDetailProvider extends ChangeNotifier {
         return false;
       }
     } catch (e) {
-      _setError('Ошибка подключения к серверу');
+      if (e is ApiException) {
+        _setError(e.message);
+      } else {
+        _setError('Ошибка подключения к серверу');
+      }
       _setTogglingFavorite(false);
       return false;
     }
