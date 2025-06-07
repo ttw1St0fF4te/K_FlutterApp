@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/auth_models.dart';
 import '../models/product.dart';
+import '../models/api_error.dart';
 
 class ApiService {
   // Use 10.0.2.2 for Android emulator, 127.0.0.1 for iOS simulator, localhost for web
@@ -341,6 +342,145 @@ class ApiService {
       return null;
     } catch (e) {
       print('Ошибка в getFavoriteIds: $e');
+      return null;
+    }
+  }
+
+  // Product details API methods
+  static Future<ProductDetails?> getProductDetails(int productId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/products/$productId/details-with-cart'),
+        headers: headers,
+      );
+
+      print('Статус ответа деталей товара: ${response.statusCode}');
+      print('Тело ответа деталей товара: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        return ProductDetails.fromJson(responseData);
+      } else {
+        print('Ошибка получения деталей товара: ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      print('Ошибка в getProductDetails: $e');
+      return null;
+    }
+  }
+
+  static Future<AddToCartResponse?> addToCart(int productId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/cart-items/add/$productId'),
+        headers: headers,
+      );
+
+      print('Статус ответа добавления в корзину: ${response.statusCode}');
+      print('Тело ответа добавления в корзину: ${response.body}');
+
+      if (response.statusCode == 201) {
+        final responseData = jsonDecode(response.body);
+        return AddToCartResponse.fromJson(responseData);
+      } else {
+        print('Ошибка добавления в корзину: ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      print('Ошибка в addToCart: $e');
+      return null;
+    }
+  }
+
+  static Future<List<Review>?> getProductReviews(int productId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/reviews/product/$productId'),
+        headers: headers,
+      );
+
+      print('Статус ответа отзывов: ${response.statusCode}');
+      print('Тело ответа отзывов: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final List<dynamic> responseData = jsonDecode(response.body);
+        return responseData
+            .map((item) => Review.fromJson(item as Map<String, dynamic>))
+            .toList();
+      } else {
+        print('Ошибка получения отзывов: ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      print('Ошибка в getProductReviews: $e');
+      return null;
+    }
+  }
+
+  static Future<ApiResult<CreateReviewResponse>> createReview(CreateReviewRequest request) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/reviews'),
+        headers: headers,
+        body: jsonEncode(request.toJson()),
+      );
+
+      print('Статус ответа создания отзыва: ${response.statusCode}');
+      print('Тело ответа создания отзыва: ${response.body}');
+
+      if (response.statusCode == 201) {
+        final responseData = jsonDecode(response.body);
+        return ApiResult.success(CreateReviewResponse.fromJson(responseData));
+      } else {
+        // Обрабатываем ошибку от сервера
+        final responseData = jsonDecode(response.body);
+        final apiError = ApiError.fromJson(responseData);
+        return ApiResult.failure(apiError);
+      }
+    } catch (e) {
+      print('Ошибка в createReview: $e');
+      return ApiResult.failure(ApiError(
+        message: 'Ошибка подключения к серверу',
+        statusCode: 0,
+      ));
+    }
+  }
+
+  // Cart API methods
+  // Cart API methods
+  static Future<Cart?> getCart() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/carts/my-cart'),
+        headers: headers,
+      );
+
+      print('Статус ответа корзины: ${response.statusCode}');
+      print('Тело ответа корзины: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        return Cart.fromJson(responseData);
+      } else {
+        print('Ошибка получения корзины: ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      print('Ошибка в getCart: $e');
+      return null;
+    }
+  }
+
+  static Future<Set<int>?> getCartProductIds() async {
+    try {
+      final cart = await getCart();
+      if (cart != null && cart.cartItems.isNotEmpty) {
+        return cart.cartItems.map((item) => item.productId).toSet();
+      }
+      return <int>{};
+    } catch (e) {
+      print('Ошибка в getCartProductIds: $e');
       return null;
     }
   }

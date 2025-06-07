@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/product_provider.dart';
 import 'providers/favorites_provider.dart';
+import 'providers/product_detail_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/catalog_screen.dart';
 
@@ -20,6 +21,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => ProductProvider()),
         ChangeNotifierProvider(create: (_) => FavoritesProvider()),
+        ChangeNotifierProvider(create: (_) => ProductDetailProvider()),
       ],
       child: MaterialApp(
         title: 'MoeShop',
