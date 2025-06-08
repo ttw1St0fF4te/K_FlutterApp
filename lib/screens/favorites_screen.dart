@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../providers/favorites_provider.dart';
-import '../providers/auth_provider.dart';
 import '../models/product.dart';
 import 'product_detail_screen.dart';
 
@@ -44,14 +43,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           'Избранное',
           style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w600),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.red),
-            onPressed: () {
-              Provider.of<AuthProvider>(context, listen: false).logout();
-            },
-          ),
-        ],
       ),
       body: Consumer<FavoritesProvider>(
         builder: (context, favoritesProvider, child) {

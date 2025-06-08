@@ -120,10 +120,9 @@ class AuthProvider extends ChangeNotifier {
       }
 
       if (response.user != null) {
-        _user = response.user;
-        await _saveUserData();
+        // При регистрации не устанавливаем пользователя автоматически
+        // Пользователь должен войти в систему отдельно
         _setLoading(false);
-        notifyListeners();
         return true;
       }
 

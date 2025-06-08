@@ -31,15 +31,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (_formKey.currentState!.validate()) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       
-      await authProvider.register(
+      final success = await authProvider.register(
         _usernameController.text.trim(),
         _passwordController.text,
         _confirmPasswordController.text,
         _emailController.text.trim().isEmpty ? null : _emailController.text.trim(),
       );
 
-      // Не нужно делать navigate - AuthWrapper автоматически перенаправит на CatalogScreen
-      // после изменения состояния в AuthProvider
+      if (success && mounted) {
+        // После успешной регистрации переходим на экран входа
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Регистрация успешна! Теперь войдите в систему.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.of(context).pop(); // Возвращаемся на экран входа
+      }
     }
   }
 
