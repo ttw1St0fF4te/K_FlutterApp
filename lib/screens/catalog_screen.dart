@@ -5,6 +5,7 @@ import '../providers/product_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/cart_provider.dart';
 import '../models/product.dart';
+import '../main.dart';
 import 'favorites_screen.dart';
 import 'cart_screen.dart';
 import 'product_detail_screen.dart';
@@ -152,8 +153,17 @@ class _CatalogScreenState extends State<CatalogScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.red),
-            onPressed: () {
-              Provider.of<AuthProvider>(context, listen: false).logout();
+            onPressed: () async {
+              final authProvider = Provider.of<AuthProvider>(context, listen: false);
+              await authProvider.logout();
+              
+              // Принудительная навигация к AuthWrapper для обеспечения корректного logout
+              if (context.mounted) {
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (context) => const AuthWrapper()),
+                  (route) => false,
+                );
+              }
             },
           ),
         ],

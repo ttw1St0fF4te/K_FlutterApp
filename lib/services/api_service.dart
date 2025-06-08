@@ -6,10 +6,11 @@ import '../models/product.dart';
 import '../models/api_error.dart';
 import '../models/checkout.dart';
 import '../models/profile.dart' as profile;
+import '../config/api_config.dart';
 
 class ApiService {
-  // Use 10.0.2.2 for Android emulator, 127.0.0.1 for iOS simulator, localhost for web
-  static const String baseUrl = 'http://127.0.0.1:3000'; // Измените на ваш API URL
+  // Use API configuration for different environments
+  static String get baseUrl => ApiConfig.baseUrl;
   
   // Для хранения cookie сессии
   static String? sessionCookie;
