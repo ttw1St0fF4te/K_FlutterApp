@@ -147,6 +147,13 @@ class CartProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Метод для очистки при смене пользователя  
+  void clearForUserChange() {
+    _cart = null;
+    _errorMessage = null;
+    notifyListeners();
+  }
+
   // Метод для локального обновления количества товара без перезагрузки корзины
   void _updateCartItemLocally(int cartItemId, int newQuantity) {
     if (_cart != null) {

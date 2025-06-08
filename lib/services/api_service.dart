@@ -5,6 +5,7 @@ import '../models/auth_models.dart';
 import '../models/product.dart';
 import '../models/api_error.dart';
 import '../models/checkout.dart';
+import '../models/profile.dart' as profile;
 
 class ApiService {
   // Use 10.0.2.2 for Android emulator, 127.0.0.1 for iOS simulator, localhost for web
@@ -760,6 +761,260 @@ class ApiService {
         message: 'Ошибка подключения к серверу',
         statusCode: 0,
       ));
+    }
+  }
+
+  // Profile API methods
+  static Future<profile.ProfileResponse?> getProfile() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/users/profile'),
+        headers: headers,
+      );
+
+      print('Статус ответа профиля: ${response.statusCode}');
+      print('Тело ответа профиля: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        return profile.ProfileResponse.fromJson(responseData);
+      } else {
+        print('Ошибка получения профиля: ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      print('Ошибка в getProfile: $e');
+      return null;
+    }
+  }
+
+  static Future<ApiResult<profile.ProfileResponse>> updateProfile(profile.ProfileRequest request) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/users/update-contact-data'),
+        headers: headers,
+        body: jsonEncode(request.toJson()),
+      );
+
+      print('Статус ответа обновления профиля: ${response.statusCode}');
+      print('Тело ответа обновления профиля: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        return ApiResult.success(profile.ProfileResponse.fromJson(responseData));
+      } else {
+        // Обрабатываем ошибку от сервера
+        try {
+          final responseData = jsonDecode(response.body);
+          final apiError = ApiError.fromJson(responseData);
+          return ApiResult.failure(apiError);
+        } catch (parseError) {
+          // Если не удалось распарсить ответ сервера
+          print('Ошибка парсинга ответа сервера: $parseError');
+          return ApiResult.failure(ApiError(
+            message: 'Ошибка сервера (${response.statusCode})',
+            statusCode: response.statusCode,
+          ));
+        }
+      }
+    } catch (e) {
+      print('Ошибка в updateProfile: $e');
+      // Проверяем, является ли это сетевой ошибкой
+      if (e.toString().contains('SocketException') || 
+          e.toString().contains('Connection') ||
+          e.toString().contains('timeout')) {
+        return ApiResult.failure(ApiError(
+          message: 'Ошибка подключения к серверу',
+          statusCode: 0,
+        ));
+      } else {
+        return ApiResult.failure(ApiError(
+          message: 'Неожиданная ошибка: ${e.toString()}',
+          statusCode: 0,
+        ));
+      }
+    }
+  }
+
+  static Future<ApiResult<bool>> changePassword(profile.ResetPasswordRequest request) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/change-password'),
+        headers: headers,
+        body: jsonEncode(request.toJson()),
+      );
+
+      print('Статус ответа смены пароля: ${response.statusCode}');
+      print('Тело ответа смены пароля: ${response.body}');
+
+      if (response.statusCode == 200) {
+        return ApiResult.success(true);
+      } else {
+        // Обрабатываем ошибку от сервера
+        try {
+          final responseData = jsonDecode(response.body);
+          final apiError = ApiError.fromJson(responseData);
+          return ApiResult.failure(apiError);
+        } catch (parseError) {
+          print('Ошибка парсинга ответа сервера: $parseError');
+          return ApiResult.failure(ApiError(
+            message: 'Ошибка сервера (${response.statusCode})',
+            statusCode: response.statusCode,
+          ));
+        }
+      }
+    } catch (e) {
+      print('Ошибка в changePassword: $e');
+      if (e.toString().contains('SocketException') || 
+          e.toString().contains('Connection') ||
+          e.toString().contains('timeout')) {
+        return ApiResult.failure(ApiError(
+          message: 'Ошибка подключения к серверу',
+          statusCode: 0,
+        ));
+      } else {
+        return ApiResult.failure(ApiError(
+          message: 'Неожиданная ошибка: ${e.toString()}',
+          statusCode: 0,
+        ));
+      }
+    }
+  }
+
+  static Future<ApiResult<String>> resetPasswordFromProfile() async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/users/reset-password-from-profile'),
+        headers: headers,
+      );
+
+      print('Статус ответа сброса пароля из профиля: ${response.statusCode}');
+      print('Тело ответа сброса пароля из профиля: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        return ApiResult.success(responseData['message'] ?? 'Новый пароль отправлен на email');
+      } else {
+        // Обрабатываем ошибку от сервера
+        try {
+          final responseData = jsonDecode(response.body);
+          final apiError = ApiError.fromJson(responseData);
+          return ApiResult.failure(apiError);
+        } catch (parseError) {
+          print('Ошибка парсинга ответа сервера: $parseError');
+          return ApiResult.failure(ApiError(
+            message: 'Ошибка сервера (${response.statusCode})',
+            statusCode: response.statusCode,
+          ));
+        }
+      }
+    } catch (e) {
+      print('Ошибка в resetPasswordFromProfile: $e');
+      if (e.toString().contains('SocketException') || 
+          e.toString().contains('Connection') ||
+          e.toString().contains('timeout')) {
+        return ApiResult.failure(ApiError(
+          message: 'Ошибка подключения к серверу',
+          statusCode: 0,
+        ));
+      } else {
+        return ApiResult.failure(ApiError(
+          message: 'Неожиданная ошибка: ${e.toString()}',
+          statusCode: 0,
+        ));
+      }
+    }
+  }
+
+  static Future<profile.OrderHistoryResponse?> getOrderHistory({int page = 1, int limit = 10}) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/users/order-history?page=$page&limit=$limit'),
+        headers: headers,
+      );
+
+      print('Статус ответа истории заказов: ${response.statusCode}');
+      print('Тело ответа истории заказов: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        return profile.OrderHistoryResponse.fromJson(responseData);
+      } else {
+        print('Ошибка получения истории заказов: ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      print('Ошибка в getOrderHistory: $e');
+      return null;
+    }
+  }
+
+  static Future<profile.OrderDetails?> getOrderDetails(int orderId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/users/orders/$orderId/details'),
+        headers: headers,
+      );
+
+      print('Статус ответа деталей заказа: ${response.statusCode}');
+      print('Тело ответа деталей заказа: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        return profile.OrderDetails.fromJson(responseData);
+      } else {
+        print('Ошибка получения деталей заказа: ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      print('Ошибка в getOrderDetails: $e');
+      return null;
+    }
+  }
+
+  static Future<profile.LoyaltyProgram?> getLoyaltyProgram() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/users/loyalty-program'),
+        headers: headers,
+      );
+
+      print('Статус ответа программы лояльности: ${response.statusCode}');
+      print('Тело ответа программы лояльности: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        return profile.LoyaltyProgram.fromJson(responseData);
+      } else {
+        print('Ошибка получения программы лояльности: ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      print('Ошибка в getLoyaltyProgram: $e');
+      return null;
+    }
+  }
+
+  static Future<profile.UserWallet?> getUserWallet() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/users/wallet'),
+        headers: headers,
+      );
+
+      print('Статус ответа кошелька: ${response.statusCode}');
+      print('Тело ответа кошелька: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        return profile.UserWallet.fromJson(responseData);
+      } else {
+        print('Ошибка получения кошелька: ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      print('Ошибка в getUserWallet: $e');
+      return null;
     }
   }
 }

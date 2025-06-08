@@ -10,8 +10,21 @@ class ApiError {
   });
 
   factory ApiError.fromJson(Map<String, dynamic> json) {
+    String message = 'Неизвестная ошибка';
+    
+    if (json['message'] != null) {
+      if (json['message'] is List) {
+        // Если message - это массив (ошибки валидации от NestJS)
+        final List<dynamic> messages = json['message'];
+        message = messages.join(', ');
+      } else {
+        // Если message - это строка
+        message = json['message'].toString();
+      }
+    }
+    
     return ApiError(
-      message: json['message'] ?? 'Неизвестная ошибка',
+      message: message,
       statusCode: json['statusCode'] ?? 0,
       error: json['error'],
     );

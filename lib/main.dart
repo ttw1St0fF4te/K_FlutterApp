@@ -6,6 +6,7 @@ import 'providers/favorites_provider.dart';
 import 'providers/product_detail_provider.dart';
 import 'providers/cart_provider.dart';
 import 'providers/checkout_provider.dart';
+import 'providers/profile_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/catalog_screen.dart';
 
@@ -26,6 +27,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ProductDetailProvider()),
         ChangeNotifierProvider(create: (_) => CartProvider()),
         ChangeNotifierProvider(create: (_) => CheckoutProvider()),
+        ChangeNotifierProvider(create: (_) => ProfileProvider()),
       ],
       child: MaterialApp(
         title: 'MoeShop',
@@ -61,6 +63,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
       final productDetailProvider = Provider.of<ProductDetailProvider>(context, listen: false);
       final cartProvider = Provider.of<CartProvider>(context, listen: false);
       final checkoutProvider = Provider.of<CheckoutProvider>(context, listen: false);
+      final profileProvider = Provider.of<ProfileProvider>(context, listen: false);
       
       // Устанавливаем callback для синхронизации избранного
       favoritesProvider.setOnFavoritesChangedCallback(() {
@@ -70,9 +73,11 @@ class _AuthWrapperState extends State<AuthWrapper> {
       // Устанавливаем связь с CartProvider для ProductDetailProvider
       productDetailProvider.setCartProvider(cartProvider);
       
-      // Устанавливаем callback для очистки CheckoutProvider при смене пользователя
+      // Устанавливаем callback для очистки при смене пользователя
       authProvider.setUserChangeCallback(() {
         checkoutProvider.clearForUserChange();
+        profileProvider.clearAllData();
+        cartProvider.clearForUserChange();
       });
     });
   }

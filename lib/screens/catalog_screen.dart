@@ -8,6 +8,7 @@ import '../models/product.dart';
 import 'favorites_screen.dart';
 import 'cart_screen.dart';
 import 'product_detail_screen.dart';
+import 'profile_screen.dart';
 
 class CatalogScreen extends StatefulWidget {
   const CatalogScreen({super.key});
@@ -137,6 +138,15 @@ class _CatalogScreenState extends State<CatalogScreen> {
                       ),
                     ),
                 ],
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.person, color: Colors.green),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ProfileScreen()),
               );
             },
           ),
@@ -303,13 +313,17 @@ class _ProductCardState extends State<ProductCard> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
+      onTap: () async {
+        await Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => ProductDetailScreen(productId: widget.product.id),
           ),
         );
+        // Синхронизируем состояние избранного после возвращения с экрана товара
+        if (context.mounted) {
+          Provider.of<ProductProvider>(context, listen: false).syncFavoriteStatus();
+        }
       },
       child: Card(
         elevation: 2,
